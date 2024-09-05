@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 
+#https://www.worldometers.info/coronavirus/
 
 def scrape_table_data(url):
 
