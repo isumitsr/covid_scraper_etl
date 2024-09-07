@@ -4,8 +4,24 @@ import csv
 import subprocess
 import pandas as pd
 import re
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 
 #https://www.worldometers.info/coronavirus/
+
+def upload_to_adls(local_file_path, storage_account_name, container_name, destination_blob_name, account_key):
+    try:
+        connection_string = f"DefaultEndpointsProtocol=https;AccountName={storage_account_name};AccountKey={account_key};EndpointSuffix=core.windows.net"
+        blob_servoce_client = BlobServiceClient.from_connection_string(connection_string)
+
+        container_client = blob_servoce_client.get_container_client(container_name)
+        blob_client = container_client.get_blob_client(destination_blob_name)
+
+        with open(local_file_path, "rb") as data:
+            blob_client.upload_blob(data, overwrite = True)
+        print(f"ile {local_file_path} uploaded to ADLS Gen2 at {destination_blob_name} successfully.")
+
+    except Exception as e:
+        print(f"Failed to upload the file to ADLS Gen2: {e}")
 
 def remove_special_characters(text):
     if isinstance(text, str):
@@ -85,6 +101,11 @@ if __name__=="__main__":
     input_file = "/Users/iamsumitsr/Desktop/Projects/Python/covid_scraper_etl/covid_worldometer_data.csv"
     output_file = "/Users/iamsumitsr/Desktop/Projects/Python/covid_scraper_etl/covidReport_clean.csv"
 
+    storage_account_name = input("Enter the storage account name in Azure Data Lake: ")
+    container_name = "worldometer"
+    destination_blob_name = "covidReport_clean.csv"
+    account_key = input("Enter the account key to connect to ADLS Gen2 (fetch from azure portal): ")
+
     url = input("Enter the website URL to scrape the data from: ")
     headers, table_data = scrape_table_data(url)
 
@@ -94,4 +115,6 @@ if __name__=="__main__":
         print("Failed to scrape any data from the website")
         
     clean_csv(input_file, output_file)
+
+    upload_to_adls(output_file, storage_account_name, container_name, destination_blob_name, account_key)
 
